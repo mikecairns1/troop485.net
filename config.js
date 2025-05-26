@@ -37,7 +37,8 @@ const config = {
         phone: '(210) 688-9312',
         email: 'info@troop485.net',
         scoutmaster: 'Natalie Rhodes',
-        committeeChair: 'Rene Beltran'
+        committeeChair: 'Rene Beltran',
+        emailCommitteeChair: 'committeechair@troop485.net'
     }
 };
 
