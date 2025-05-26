@@ -31,13 +31,13 @@ const config = {
     // Troop Information
     troop: {
         name: 'BSA Troop 485',
-        location: 'San Antonio, TX',
+        location: 'Helotes, TX',
         meetingPlace: 'VFW Post 7108',
         address: '8795 FM 1560 N, Helotes, TX 78254',
         phone: '(210) 688-9312',
         email: 'info@troop485.net',
         scoutmaster: 'Natalie Rhodes',
-        committeeChair: '[Committee Chair Name]'
+        committeeChair: 'Rene Beltran'
     }
 };
 
