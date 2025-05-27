@@ -39,8 +39,29 @@ const config = {
         scoutmaster: 'Natalie Rhodes',
         committeeChair: 'Rene Beltran',
         emailCommitteeChair: 'committeechair@troop485.net'
+    },
+
+    aws: {
+        region: 'us-east-1',
+        apiEndpoint: 'YOUR_API_GATEWAY_ENDPOINT',
+        ses: {
+            fromEmail: 'noreply@troop485.net',
+            toEmail: 'info@troop485.net'
+        },
+        sns: {
+            enabled: true
+        }
     }
 };
 
+// Don't expose sensitive configuration in production
+if (process.env.NODE_ENV === 'production') {
+    config.aws.apiEndpoint = process.env.AWS_API_ENDPOINT;
+    config.aws.ses.fromEmail = process.env.AWS_SES_FROM_EMAIL;
+    config.aws.ses.toEmail = process.env.AWS_SES_TO_EMAIL;
+}
+
 // Make config available globally
-window.troopConfig = config; 
+window.troopConfig = config;
+
+export default config; 

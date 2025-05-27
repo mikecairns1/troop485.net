@@ -73,7 +73,7 @@ function setActiveNavigation() {
 function initializeContactForm() {
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
+        contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Get form data
@@ -92,10 +92,49 @@ function initializeContactForm() {
                 alert('Please enter a valid email address.');
                 return;
             }
+
+            // Phone validation if provided
+            if (data.phone) {
+                const phoneRegex = /^\+?1?\d{10}$/;
+                if (!phoneRegex.test(data.phone.replace(/\D/g, ''))) {
+                    alert('Please enter a valid 10-digit phone number.');
+                    return;
+                }
+            }
             
-            // Show success message (in a real implementation, this would submit to a server)
-            alert('Thank you for your message! We will get back to you soon.');
-            contactForm.reset();
+            try {
+                // Show loading state
+                const submitButton = contactForm.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Sending...';
+
+                // Send data to Lambda function
+                const response = await fetch('YOUR_API_GATEWAY_ENDPOINT', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to send message');
+                }
+
+                // Show success message
+                alert('Thank you for your message! We will get back to you soon.');
+                contactForm.reset();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Sorry, there was an error sending your message. Please try again later.');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
         });
     }
 }

@@ -672,4 +672,115 @@ npm test
 4. Build for production:
 ```bash
 npm run build
-``` 
+```
+
+## Contact Form Implementation
+
+The contact form on the website uses AWS services to handle form submissions. When a user submits the contact form:
+
+1. The form data is validated on the client side
+2. The data is sent to an AWS Lambda function via API Gateway
+3. The Lambda function sends:
+   - An email notification via AWS SES
+   - An SMS notification via AWS SNS (if a phone number is provided)
+
+### AWS Setup Requirements
+
+#### 1. AWS SES Configuration
+- Verify your domain (troop485.net) in SES
+- Verify the email addresses:
+  - noreply@troop485.net (sender)
+  - info@troop485.net (recipient)
+- Move SES out of sandbox mode if sending to non-verified email addresses
+
+#### 2. AWS SNS Configuration
+- Create an SNS topic for SMS notifications
+- Configure SMS settings:
+  - Set SMS type (Transactional or Promotional)
+  - Set monthly spending limit
+  - Note: SMS messages will incur charges
+
+#### 3. AWS Lambda Setup
+1. Create a new Lambda function using the code in `lambda/contact-form-handler.js`
+2. Configure the Lambda role with the following IAM permissions:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ses:SendEmail",
+                "ses:SendRawEmail"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sns:Publish"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+#### 4. API Gateway Setup
+1. Create a new REST API
+2. Create a POST method that integrates with your Lambda function
+3. Enable CORS
+4. Deploy the API
+5. Copy the API endpoint URL to your `config.js` file
+
+### Environment Variables
+
+Set up the following environment variables in your production environment:
+- `AWS_API_ENDPOINT`: Your API Gateway endpoint URL
+- `AWS_SES_FROM_EMAIL`: The verified sender email address
+- `AWS_SES_TO_EMAIL`: The recipient email address
+
+### Form Validation
+
+The contact form includes the following validations:
+- Required fields: name, email, subject, message
+- Email format validation
+- Phone number format validation (if provided)
+  - Must be a valid 10-digit number
+  - Can include country code (+1)
+
+### Error Handling
+
+The system includes comprehensive error handling:
+- Client-side validation with user feedback
+- Server-side validation in the Lambda function
+- Error messages for failed submissions
+- Loading states during submission
+- Automatic form reset after successful submission
+
+### Security Considerations
+
+1. CORS is enabled for the API Gateway endpoint
+2. Sensitive configuration is moved to environment variables in production
+3. Input validation is performed on both client and server side
+4. AWS IAM roles follow the principle of least privilege
+
+## Development
+
+To modify the contact form functionality:
+
+1. Update the Lambda function in `lambda/contact-form-handler.js`
+2. Modify the form handling in `scripts.js`
+3. Update configuration in `config.js`
+4. Test thoroughly in a development environment before deploying
+
+## Deployment
+
+1. Deploy the Lambda function
+2. Update the API Gateway configuration
+3. Set the environment variables in your production environment
+4. Deploy the website code
+
+## Support
+
+For questions or issues regarding the contact form implementation, please contact the website administrator at info@troop485.net. 
