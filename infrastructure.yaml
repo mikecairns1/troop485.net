@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Troop 485 Website Infrastructure'
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: troop485.net
+    Description: Domain name for the website
+  EnableWAF:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to enable WAF protection (increases costs)
+
+Conditions:
+  EnableWAFCondition: !Equals [!Ref EnableWAF, 'true']
+
+Resources:
+  # S3 Bucket for website hosting
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${DomainName}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub 'arn:aws:s3:::${WebsiteBucket}/*'
+
+  # CloudFront Distribution
+  WebsiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Ref CloudFrontOriginAccessIdentity
+        Enabled: true
+        DefaultRootObject: index.html
+        Aliases:
+          - !Ref DomainName
+          - !Sub 'www.${DomainName}'
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref WebsiteCertificate
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        WebACLId: !If 
+          - EnableWAFCondition
+          - !Ref WebsiteWAF
+          - !Ref 'AWS::NoValue'
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${DomainName}'
+
+  # WAF Web ACL (Conditional)
+  WebsiteWAF:
+    Type: AWS::WAFv2::WebACL
+    Condition: EnableWAFCondition
+    Properties:
+      Name: !Sub '${DomainName}-waf'
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      Rules:
+        - Name: RateLimit
+          Priority: 1
+          Statement:
+            RateBasedStatement:
+              Limit: 2000
+              AggregateKeyType: IP
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimit
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${DomainName}-waf'
+
+  # ACM Certificate
+  WebsiteCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Sub 'www.${DomainName}'
+      ValidationMethod: DNS
+
+  # DynamoDB Tables
+  TroopEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TroopEvents
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  PatrolsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Patrols
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  LeadershipTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Leadership
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # API Gateway
+  WebsiteApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub '${DomainName}-api'
+      Description: API for Troop 485 website
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiMethod
+    Properties:
+      RestApiId: !Ref WebsiteApi
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      RestApiId: !Ref WebsiteApi
+      StageName: prod
+
+  # Lambda Functions
+  EventsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            const AWS = require('aws-sdk');
+            const dynamoDB = new AWS.DynamoDB.DocumentClient();
+            
+            try {
+              const params = {
+                TableName: 'TroopEvents'
+              };
+              const result = await dynamoDB.scan(params).promise();
+              return {
+                statusCode: 200,
+                headers: {
+                  'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify(result.Items)
+              };
+            } catch (error) {
+              return {
+                statusCode: 500,
+                body: JSON.stringify({ error: error.message })
+              };
+            }
+          };
+      Runtime: nodejs18.x
+      Timeout: 30
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TroopEventsTable
+
+  # IAM Roles
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !GetAtt TroopEventsTable.Arn
+                  - !GetAtt PatrolsTable.Arn
+                  - !GetAtt LeadershipTable.Arn
+
+Outputs:
+  WebsiteURL:
+    Description: URL of the website
+    Value: !Sub 'https://${DomainName}'
+  
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${WebsiteApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  CloudFrontDistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref WebsiteDistribution
+
+  WAFEnabled:
+    Description: Whether WAF is enabled
+    Value: !Ref EnableWAF
+    Condition: EnableWAFCondition 

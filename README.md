@@ -500,3 +500,176 @@ For questions or support:
 - AWS for hosting
 - Tailwind CSS for styling
 - All troop volunteers and contributors 
+
+## 🏗️ AWS Infrastructure
+
+The website is built on a modern serverless architecture using various AWS services. Here's a detailed breakdown of the infrastructure:
+
+### Architecture Diagram
+![AWS Infrastructure](infrastructure.svg)
+
+### Core Services
+
+#### Frontend
+- **Amazon S3**
+  - Static website hosting
+  - Stores HTML, CSS, JS, and media files
+  - Configured for public access
+  - CORS enabled for API access
+
+- **Amazon CloudFront**
+  - Global CDN distribution
+  - SSL/TLS termination
+  - Custom domain support
+  - Edge caching
+  - Geographic distribution
+
+#### Backend
+- **Amazon API Gateway**
+  - RESTful API endpoints
+  - Request/response handling
+  - API key management
+  - Rate limiting
+  - CORS configuration
+
+- **AWS Lambda**
+  - Serverless compute functions
+  - Event management
+  - Patrol information
+  - Leadership updates
+  - Data validation
+
+- **Amazon DynamoDB**
+  - NoSQL database
+  - Tables:
+    - TroopEvents
+    - Patrols
+    - Leadership
+  - Auto-scaling enabled
+  - Point-in-time recovery
+
+#### Security (Optional)
+- **AWS WAF** (Optional - increases costs)
+  - Web application firewall
+  - Protection against common exploits
+  - Rate-based rules
+  - IP-based rules
+  - To enable WAF, set `ENABLE_WAF=true` in your `.env` file
+
+- **IAM (Identity and Access Management)**
+  - Role-based access control
+  - Least privilege policies
+  - Service roles for Lambda
+  - API Gateway permissions
+
+#### Monitoring & Management
+- **Amazon CloudWatch**
+  - Logs for Lambda functions
+  - API Gateway metrics
+  - Custom dashboards
+  - Alarm configurations
+
+- **Route 53**
+  - DNS management
+  - Domain registration
+  - Health checks
+  - SSL certificate management
+
+### Cost Considerations
+- S3: Storage and request costs
+- CloudFront: Data transfer and request costs
+- API Gateway: Request and data transfer costs
+- Lambda: Request and compute time costs
+- DynamoDB: Storage and read/write capacity costs
+- Route 53: Hosted zone and query costs
+- WAF: Request costs (optional, can be disabled to reduce costs)
+
+### Security Best Practices
+1. Enable HTTPS everywhere
+2. Implement proper CORS policies
+3. Use IAM roles with least privilege
+4. Enable WAF rules (optional)
+5. Regular security audits
+6. Data encryption at rest and in transit
+
+### Scaling Considerations
+1. DynamoDB auto-scaling
+2. Lambda concurrent execution limits
+3. CloudFront edge locations
+4. API Gateway throttling
+5. S3 performance optimization
+
+## 🔄 CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+```yaml
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Deploy to S3
+        run: |
+          aws s3 sync . s3://troop485.net \
+            --exclude "*.git*" \
+            --exclude "README.md" \
+            --exclude "node_modules/*" \
+            --delete
+      
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+```
+
+## 📝 Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=us-east-1
+DYNAMODB_TABLE_EVENTS=TroopEvents
+DYNAMODB_TABLE_PATROLS=Patrols
+DYNAMODB_TABLE_LEADERSHIP=Leadership
+API_GATEWAY_URL=your_api_gateway_url
+```
+
+## 🔧 Local Development
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+3. Run tests:
+```bash
+npm test
+```
+
+4. Build for production:
+```bash
+npm run build
+``` 

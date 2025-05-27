@@ -1,0 +1,104 @@
+{
+  "Alarms": [
+    {
+      "AlarmName": "Troop485-HighErrorRate",
+      "AlarmDescription": "Alarm when error rate exceeds 1%",
+      "MetricName": "5XXError",
+      "Namespace": "AWS/CloudFront",
+      "Statistic": "Sum",
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 10,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "Dimensions": [
+        {
+          "Name": "DistributionId",
+          "Value": "${CLOUDFRONT_DISTRIBUTION_ID}"
+        }
+      ],
+      "AlarmActions": [
+        "${SNS_TOPIC_ARN}"
+      ]
+    },
+    {
+      "AlarmName": "Troop485-HighLatency",
+      "AlarmDescription": "Alarm when latency exceeds 1 second",
+      "MetricName": "TotalErrorRate",
+      "Namespace": "AWS/CloudFront",
+      "Statistic": "Average",
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 1,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "Dimensions": [
+        {
+          "Name": "DistributionId",
+          "Value": "${CLOUDFRONT_DISTRIBUTION_ID}"
+        }
+      ],
+      "AlarmActions": [
+        "${SNS_TOPIC_ARN}"
+      ]
+    },
+    {
+      "AlarmName": "Troop485-LowCacheHitRatio",
+      "AlarmDescription": "Alarm when cache hit ratio falls below 80%",
+      "MetricName": "CacheHitRate",
+      "Namespace": "AWS/CloudFront",
+      "Statistic": "Average",
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 80,
+      "ComparisonOperator": "LessThanThreshold",
+      "Dimensions": [
+        {
+          "Name": "DistributionId",
+          "Value": "${CLOUDFRONT_DISTRIBUTION_ID}"
+        }
+      ],
+      "AlarmActions": [
+        "${SNS_TOPIC_ARN}"
+      ]
+    },
+    {
+      "AlarmName": "Troop485-APIErrors",
+      "AlarmDescription": "Alarm when API Gateway errors exceed threshold",
+      "MetricName": "5XXError",
+      "Namespace": "AWS/ApiGateway",
+      "Statistic": "Sum",
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 5,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "Dimensions": [
+        {
+          "Name": "ApiName",
+          "Value": "${API_NAME}"
+        }
+      ],
+      "AlarmActions": [
+        "${SNS_TOPIC_ARN}"
+      ]
+    },
+    {
+      "AlarmName": "Troop485-LambdaErrors",
+      "AlarmDescription": "Alarm when Lambda errors exceed threshold",
+      "MetricName": "Errors",
+      "Namespace": "AWS/Lambda",
+      "Statistic": "Sum",
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 5,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "Dimensions": [
+        {
+          "Name": "FunctionName",
+          "Value": "${LAMBDA_FUNCTION_NAME}"
+        }
+      ],
+      "AlarmActions": [
+        "${SNS_TOPIC_ARN}"
+      ]
+    }
+  ]
+} 

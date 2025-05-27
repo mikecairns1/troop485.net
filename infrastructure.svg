@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="800" height="600" fill="#f8f9fa"/>
+    
+    <!-- Title -->
+    <text x="400" y="40" font-family="Arial" font-size="24" text-anchor="middle" fill="#333">Troop 485 AWS Infrastructure</text>
+    
+    <!-- Client -->
+    <circle cx="100" cy="300" r="30" fill="#6c757d"/>
+    <text x="100" y="305" font-family="Arial" font-size="12" text-anchor="middle" fill="white">Client</text>
+    
+    <!-- CloudFront -->
+    <rect x="200" y="250" width="120" height="80" rx="10" fill="#007bff"/>
+    <text x="260" y="290" font-family="Arial" font-size="12" text-anchor="middle" fill="white">CloudFront</text>
+    
+    <!-- S3 -->
+    <rect x="400" y="250" width="120" height="80" rx="10" fill="#28a745"/>
+    <text x="460" y="290" font-family="Arial" font-size="12" text-anchor="middle" fill="white">S3</text>
+    
+    <!-- API Gateway -->
+    <rect x="200" y="400" width="120" height="80" rx="10" fill="#ffc107"/>
+    <text x="260" y="440" font-family="Arial" font-size="12" text-anchor="middle" fill="black">API Gateway</text>
+    
+    <!-- Lambda -->
+    <rect x="400" y="400" width="120" height="80" rx="10" fill="#dc3545"/>
+    <text x="460" y="440" font-family="Arial" font-size="12" text-anchor="middle" fill="white">Lambda</text>
+    
+    <!-- DynamoDB -->
+    <rect x="600" y="400" width="120" height="80" rx="10" fill="#17a2b8"/>
+    <text x="660" y="440" font-family="Arial" font-size="12" text-anchor="middle" fill="white">DynamoDB</text>
+    
+    <!-- WAF -->
+    <rect x="200" y="150" width="120" height="60" rx="10" fill="#6f42c1"/>
+    <text x="260" y="185" font-family="Arial" font-size="12" text-anchor="middle" fill="white">WAF</text>
+    
+    <!-- Route 53 -->
+    <rect x="400" y="150" width="120" height="60" rx="10" fill="#fd7e14"/>
+    <text x="460" y="185" font-family="Arial" font-size="12" text-anchor="middle" fill="white">Route 53</text>
+    
+    <!-- CloudWatch -->
+    <rect x="600" y="150" width="120" height="60" rx="10" fill="#20c997"/>
+    <text x="660" y="185" font-family="Arial" font-size="12" text-anchor="middle" fill="white">CloudWatch</text>
+    
+    <!-- Connections -->
+    <!-- Client to WAF -->
+    <line x1="100" y1="270" x2="200" y2="180" stroke="#333" stroke-width="2"/>
+    <!-- WAF to CloudFront -->
+    <line x1="320" y1="180" x2="200" y2="290" stroke="#333" stroke-width="2"/>
+    <!-- CloudFront to S3 -->
+    <line x1="320" y1="290" x2="400" y2="290" stroke="#333" stroke-width="2"/>
+    <!-- CloudFront to API Gateway -->
+    <line x1="260" y1="330" x2="260" y2="400" stroke="#333" stroke-width="2"/>
+    <!-- API Gateway to Lambda -->
+    <line x1="320" y1="440" x2="400" y2="440" stroke="#333" stroke-width="2"/>
+    <!-- Lambda to DynamoDB -->
+    <line x1="520" y1="440" x2="600" y2="440" stroke="#333" stroke-width="2"/>
+    <!-- Route 53 to CloudFront -->
+    <line x1="460" y1="210" x2="260" y2="250" stroke="#333" stroke-width="2"/>
+    <!-- CloudWatch to Lambda -->
+    <line x1="660" y1="210" x2="460" y2="400" stroke="#333" stroke-width="2"/>
+    
+    <!-- Legend -->
+    <rect x="50" y="520" width="700" height="60" rx="5" fill="#fff" stroke="#ddd"/>
+    <text x="400" y="540" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">AWS Services Legend</text>
+    <text x="400" y="565" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Frontend: S3, CloudFront | Backend: API Gateway, Lambda, DynamoDB | Security: WAF | Monitoring: CloudWatch | DNS: Route 53</text>
+</svg>
